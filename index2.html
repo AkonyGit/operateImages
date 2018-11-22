@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title></title>
+    <script src="./lib/jquery.min.js"></script>
+    <script src="./lib/iscroll.js"></script>
+    <script src="./lib/pixi-4.7.1.min.js"></script>
+    <script src="http://pixijs.io/examples/required/plugins/pixi-layers.js"></script>
+    <script src="https://cdn.bootcss.com/mathjs/4.4.0/math.js"></script>
+    <style media="screen">
+      *{
+        margin: 0;
+        padding: 0;
+        -webkit-box-sizing: border-box;
+      	-moz-box-sizing: border-box;
+      	box-sizing: border-box;
+      }
+      #container {
+        width: 100%;
+        height: 50px;
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        touch-action: pan-y pinch-zoom;
+        overflow: hidden;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        -o-user-select: none;
+        user-select: none;
+        -ms-touch-action: none;
+      }
+      #scroller {
+        position: absolute;
+        z-index: 1;
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+        height: 50px;
+        -webkit-transform: translateZ(0);
+        -moz-transform: translateZ(0);
+        -ms-transform: translateZ(0);
+        -o-transform: translateZ(0);
+        transform: translateZ(0);
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-text-size-adjust: none;
+        -moz-text-size-adjust: none;
+        -ms-text-size-adjust: none;
+        -o-text-size-adjust: none;
+        text-size-adjust: none;
+      }
+      #scroller ul{
+        background: white;
+        width: 100%;
+        height: 50px;
+        -webkit-transform-origin: left top;
+        -webkit-transform: translateZ(0);
+        -moz-transform-origin: left top;
+        -moz-transform: translateZ(0);
+        -ms-transform-origin: left top;
+        -ms-transform: translateZ(0);
+        -o-transform-origin: left top;
+        -o-transform: translateZ(0);
+        transform-origin: left top;
+        transform: translateZ(0);
+      }
+      .cell{
+        width: 80px;
+        height: 50px;
+        display: inline-block;
+        text-align: center;
+        line-height: 50px;
+        background-color: #282630;
+      }
+      #container_m {
+        height: 100px;
+        opacity: .8;
+        position: fixed;
+        left: 0;
+        bottom: 50px;
+        touch-action: pan-y pinch-zoom;
+        overflow: hidden;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        -o-user-select: none;
+        user-select: none;
+        -ms-touch-action: none;
+      }
+      #scroller_m {
+        position: absolute;
+        z-index: 1;
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+        height: 100px;
+        -webkit-transform: translateZ(0);
+        -moz-transform: translateZ(0);
+        -ms-transform: translateZ(0);
+        -o-transform: translateZ(0);
+        transform: translateZ(0);
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-text-size-adjust: none;
+        -moz-text-size-adjust: none;
+        -ms-text-size-adjust: none;
+        -o-text-size-adjust: none;
+        text-size-adjust: none;
+      }
+      #scroller_m ul{
+        background-color: #282630;
+        width: 100%;
+        height: 100px;
+        -webkit-transform-origin: left top;
+        -webkit-transform: translateZ(0);
+        -moz-transform-origin: left top;
+        -moz-transform: translateZ(0);
+        -ms-transform-origin: left top;
+        -ms-transform: translateZ(0);
+        -o-transform-origin: left top;
+        -o-transform: translateZ(0);
+        transform-origin: left top;
+        transform: translateZ(0);
+      }
+      .cell-m{
+        width: 80px;
+        height: 100px;
+        display: inline-block;
+        text-align: center;
+        line-height: 50px;
+        background-color: #282630;
+      }
+    </style>
+  </head>
+  <body onload = "loaded()">
+    <div id="save" style="position: fixed;right: 0;bottom: 205px;background: rgba(0, 0, 0, 0.6);color: #eee;font-size: 12px;width: 20px;height: 46px;text-align: center;line-height: 23px;border-radius: 10px 0 0 10px;">
+      保存
+    </div>
+    <div id="showOrHide" style="position: fixed;right: 0;bottom: 155px;background: rgba(0, 0, 0, 0.6);color: #eee;font-size: 12px;width: 20px;height: 46px;text-align: center;line-height: 23px;border-radius: 10px 0 0 10px;">
+      隐藏
+    </div>
+    <div id="container_m">
+      <div id="scroller_m">
+        <ul id="content_m"></ul>
+      </div>
+    </div>
+    <div id="container">
+      <div id="scroller">
+        <ul id="content"></ul>
+      </div>
+  	</div>
+  </body>
+<script>
+  var oDefaultOption = {
+    showRule: 'nearPositionOnTop',  //  nearPositionOnTop selectOnTop
+  }
+  var aMaterial = [
+    {
+      name: 'background',
+      imgUrl: './images/bg1.jpg',
+      type: 'background',
+      value: [{name: 'name1', value: './images/bg1.jpg'},
+      {name: 'name2', value: './images/bg2.jpg'},]
+    }, {
+      name: 'backgroundComponents',
+      imgUrl: '',
+      type: 'backgroundComponents',
+      value: [{name: 'name1', value: './images/block.png', position: [200, 100]},
+      {name: 'name2', value: './images/block.png', position: [200, 400]}]
+    }, {
+      name: '',
+      imgUrl: './images/1.png',
+      type: 'part',
+      value: [{name: 'name1', value: './images/1.png', scale: true, rotate: true},
+      {name: 'name2', value: './images/2.png', scale: true, rotate: true},
+      {name: 'name3', value: './images/3.png', scale: true, rotate: true},
+      {name: 'name4', value: './images/4.png', scale: true, rotate: true},
+      {name: 'name1', value: './images/5.png', scale: true, rotate: true},
+      {name: 'name2', value: './images/6.png', scale: true, rotate: true},
+      {name: 'name3', value: './images/1.png', scale: true, rotate: true},
+      {name: 'name4', value: './images/2.png', scale: true, rotate: true}]
+    }, {
+      name: '',
+      imgUrl: './images/2.png',
+      value: [{name: 'name1', value: './images/2.png', scale: false, rotate: true},
+      {name: 'name2', value: './images/2.png', scale: true, rotate: false},
+      {name: 'name3', value: './images/2.png', scale: false, rotate: true},
+      {name: 'name4', value: './images/2.png', scale: true, rotate: false}]
+    }, {
+      name: '',
+      imgUrl: './images/3.png',
+      value: [{name: 'name1', value: './images/3.png', scale: true, rotate: true},
+      {name: 'name2', value: './images/3.png', scale: true, rotate: true},
+      {name: 'name3', value: './images/3.png', scale: true, rotate: true},
+      {name: 'name4', value: './images/3.png', scale: true, rotate: true}]
+    }, {
+      name: '',
+      imgUrl: './images/4.png',
+      value: [{name: 'name1', value: './images/4.png', scale: true, rotate: true},
+      {name: 'name2', value: './images/4.png', scale: true, rotate: true},
+      {name: 'name3', value: './images/4.png', scale: true, rotate: true},
+      {name: 'name4', value: './images/4.png', scale: true, rotate: true},
+      {name: 'name2', value: './images/4.png', scale: true, rotate: true},
+      {name: 'name3', value: './images/4.png', scale: true, rotate: true},]
+    }, {
+      name: '',
+      imgUrl: './images/5.png',
+      value: [{name: 'name1', value: './images/5.png', scale: true, rotate: true},
+      {name: 'name2', value: './images/5.png', scale: true, rotate: true},
+      {name: 'name3', value: './images/5.png', scale: true, rotate: true},
+      {name: 'name4', value: './images/5.png', scale: true, rotate: true},
+      {name: 'name2', value: './images/5.png', scale: true, rotate: true},
+      {name: 'name3', value: './images/5.png', scale: true, rotate: true},]
+    }, {
+      name: '',
+      imgUrl: './images/6.png',
+      value: [{name: 'name1', value: './images/6.png', scale: true, rotate: true},
+      {name: 'name2', value: './images/6.png', scale: true, rotate: true},
+      {name: 'name3', value: './images/6.png', scale: true, rotate: true},
+      {name: 'name4', value: './images/6.png', scale: true, rotate: true},
+      {name: 'name2', value: './images/6.png', scale: true, rotate: true},
+      {name: 'name3', value: './images/6.png', scale: true, rotate: true},]
+    }
+  ]
+  var container = document.getElementById("container");
+	var content = document.getElementById("content");
+  var bg = null;
+  var myScroll, myScroll_m;
+  //  创建类别列表
+  var frag = document.createDocumentFragment();
+	for (var cell = 0; cell < aMaterial.length; cell++) {
+    if ( aMaterial[cell].type === "backgroundComponents") {
+      continue;
+    }
+		var elem = document.createElement("li");
+		elem.className = "cell";
+    var imgDiv = document.createElement("div");
+    imgDiv.style.position = "relative";
+    if (cell === 0) {
+      imgDiv.style.backgroundColor = "#ff216c";
+    }
+    imgDiv.style.backgroundImage = "url(" + aMaterial[cell].imgUrl + ")";
+    imgDiv.style.backgroundSize = "32px 32px";
+    imgDiv.style.width = "32px";
+    imgDiv.style.height = "32px";
+    imgDiv.style.top = "9px";
+    imgDiv.style.left = "24px";
+    imgDiv.id = "id_" + (cell + 1);
+    imgDiv.className = "img-div";
+    imgDiv.dataset.material = cell;
+    imgDiv.onclick = function (e) {
+      myScroll_m.scrollTo(0, 0);
+      createElementMaterial(e.target.dataset.material);
+      var imgDivList = document.getElementsByClassName('img-div');
+      for (var i of imgDivList) {
+        i.style.backgroundColor = ""
+      }
+      e.target.style.backgroundColor = "#ff216c";
+      if (document.getElementById("showOrHide").innerHTML.indexOf('显示') !== -1) {
+        var container_m = document.getElementById("container_m");
+        $("#container_m").show(400);
+        document.getElementById("showOrHide").innerHTML = "隐藏";
+      }
+      setTimeout(function () {
+        myScroll_m.refresh();
+      }, 500);
+    }
+    elem.appendChild(imgDiv);
+		frag.appendChild(elem);
+	}
+	content.appendChild(frag);
+  var cellList = document.getElementsByClassName("cell");
+  if (screen.availWidth < (cellList[0].clientWidth * aMaterial.length)) {
+    content_m.style.width = cellList[0].clientWidth * cellList.length + "px";
+    document.getElementById("scroller").style.width = cellList[0].clientWidth * cellList.length + "px";
+  } else {
+    content_m.style.width = screen.availWidth + "px";
+    document.getElementById("scroller").style.width = screen.availWidth + "px";
+  }
+  createElementMaterial();
+  //  创建素材列表
+  function createElementMaterial (num) {
+    if (!num) {
+      num = 0;
+    }
+    var container_m = document.getElementById("container_m");
+  	var content_m = document.getElementById("content_m");
+    content_m.innerHTML = "";
+    container_m.style.width = screen.availWidth + "px";
+  	var frag_m = document.createDocumentFragment();
+    var aImgList = aMaterial[num].value;
+  	for (var cell = 0; cell < aImgList.length; cell++) {
+  		var elem = document.createElement("li");
+  		elem.className = "cell-m";
+      var imgDiv = document.createElement("div");
+      imgDiv.style.position = "relative";
+      imgDiv.style.backgroundImage = "url(" + aImgList[cell].value + ")";
+      imgDiv.style.width = "64px";
+      imgDiv.style.height = "64px";
+      imgDiv.style.backgroundSize = "64px 64px";
+      imgDiv.style.top = "9px";
+      imgDiv.style.left = "10px";
+      imgDiv.id = "m_" + cell;
+      imgDiv.className = "img-div";
+      imgDiv.dataset.type = aMaterial[num].type;
+      imgDiv.dataset.position = aMaterial[num].position;
+      imgDiv.dataset.name = aImgList[cell].name;
+      imgDiv.dataset.scale = aImgList[cell].scale;
+      imgDiv.dataset.rotate = aImgList[cell].rotate;
+      imgDiv.dataset.imgurl = aImgList[cell].value;
+      imgDiv.onclick = function (e) {
+        //  判断是否为背景
+        var option = e.target.dataset;
+        // console.log(option.imgurl)
+        if (this.dataset.type === 'background') {
+          var texture = PIXI.Texture.fromFrame(option.imgurl);
+          bg.setTexture(texture);
+        } else if (this.dataset.type === 'part') {
+          changeMaterial2Canvas(option);
+        } else {
+          addMaterial2Canvas(option);
+        }
+      }
+      elem.appendChild(imgDiv);
+  		frag_m.appendChild(elem);
+  	}
+  	content_m.appendChild(frag_m);
+    var cellList = document.getElementsByClassName("cell-m");
+    if (screen.availWidth < (cellList[0].clientWidth * cellList.length)) {
+      content_m.style.width = cellList[0].clientWidth * cellList.length + "px";
+      document.getElementById("scroller_m").style.width = cellList[0].clientWidth * cellList.length + "px";
+    } else {
+      content_m.style.width = screen.availWidth + "px";
+      document.getElementById("scroller_m").style.width = screen.availWidth + "px";
+    }
+  }
+</script>
+<script>
+//      -----------------------------------------------
+  var obj = findDimensions();
+  var nBgWidth = obj.width;
+  var nBgHeight = obj.height;
+
+  var Application = PIXI.Application,
+    loader = PIXI.loader,
+    resources = PIXI.loader.resources,
+    Sprite = PIXI.Sprite;
+  var app = new Application({
+      width: nBgWidth,
+      height: nBgHeight,
+      antialias: true,
+      transparent: false,
+      resolution: 1
+    }
+  );
+  document.body.appendChild(app.view);
+
+  var bgGroup = new PIXI.display.Group(-1, false);
+  var blueGroup = new PIXI.display.Group(1, function (sprite) {
+    if (oDefaultOption.showRule === 'selectOnTop') {
+
+    } else if (oDefaultOption.showRule === 'nearPositionOnTop') {
+      sprite.zOrder = -sprite.y;
+    }
+  });
+  var dragGroup = new PIXI.display.Group(2, false);
+  app.stage = new PIXI.display.Stage();
+  app.stage.group.enableSort = true;
+  app.stage.addChild(new PIXI.display.Layer(bgGroup));
+  app.stage.addChild(new PIXI.display.Layer(blueGroup));
+  var materialContainer = new PIXI.Container();    //背景分组
+  var backgroundContainer = new PIXI.Container();    //素材分组
+  app.stage.addChild(materialContainer);
+  app.stage.addChild(backgroundContainer);
+  app.stage.addChild(new PIXI.display.Layer(dragGroup));
+  var oTouchVector = {};
+  var touchDistance = null;
+  var previousPinchScale = 0;
+  var aAllImgData = ["./images/rotate.png", "./images/close.png", "./images/zoom.png"];
+  for (var i of aMaterial) {
+    if (aAllImgData.indexOf(i.imgUrl) == -1) {
+      aAllImgData.push(i.imgUrl);
+    }
+    for (var j of i.value) {
+      if (aAllImgData.indexOf(j.value) == -1) {
+        aAllImgData.push(j.value);
+      }
+    }
+  }
+
+  // 加载全部图片素材
+  loader.add(aAllImgData).on("progress", loadProgressHandler);
+  loader
+    .add([])
+    .load(function () {
+      for (var i of aMaterial) {
+        if (i.type === "background") {
+          var texture = PIXI.Texture.fromFrame(i.value[0].value);
+          bg = new Sprite(texture);
+          bg.width = nBgWidth;
+          bg.height = nBgHeight;
+          bg.parentGroup = bgGroup;
+          backgroundContainer.addChild(bg);
+          backgroundContainer.interactive = backgroundContainer.buttonMode = true;
+          backgroundContainer.mousedown = backgroundContainer.touchstart = function (event) {
+            console.log('------------------bg.mousedown--------------------');
+            // console.log('event =>', event);
+            for (var i in app.stage.children[2].children) {
+              app.stage.children[2].children[i].sOperationPart = null;
+              app.stage.children[2].children[i].dragging = false;
+              if (this.oBeClick) {
+                for (var j in app.stage.children[2].children[i].children) {
+                  if (Number(j) !== 0) {
+                    app.stage.children[2].children[i].children[j].visible = false;
+                  }
+                }
+              }
+            }
+            this.oBeClick = true;
+          }
+          backgroundContainer.mousemove = backgroundContainer.touchmove = function (event) {
+            // console.log('------------------bg.mousemove--------------------');
+            // console.log('event =>', event);
+          }
+          backgroundContainer.mouseup = backgroundContainer.mouseupoutside = backgroundContainer.touchend = function (event) {
+            console.log(app.stage)
+            console.log('------------------bg.mouseup--------------------');
+            // console.log('event =>', event);
+            for (var i in app.stage.children[2].children) {
+              app.stage.children[2].children[i].sOperationPart = null;
+              app.stage.children[2].children[i].dragging = false;
+              if (this.oBeClick) {
+                for (var j in app.stage.children[2].children[i].children) {
+                  if (Number(j) !== 0) {
+                    app.stage.children[2].children[i].children[j].visible = false;
+                  }
+                }
+              }
+            }
+            this.oBeClick = false;
+          }
+          break;
+        }
+      }
+    });
+  function changeMaterial2Canvas (imgurl) {
+
+  }
+  var oMaterialMovePosition = {
+    x: 5,
+    y: 0
+  };  //新生成素材位置偏移量
+  function addMaterial2Canvas (option) {
+    console.log(option)
+    for (var i in app.stage.children[2].children) {
+      app.stage.children[2].children[i].sOperationPart = null;
+      for (var j in app.stage.children[2].children[i].children) {
+        if (Number(j) !== 0) {
+          app.stage.children[2].children[i].children[j].visible = false;
+        }
+      }
+    }
+    var texture = PIXI.Texture.fromFrame(option.imgurl);
+    var body = new Sprite(texture);
+    var rotate = new Sprite(
+      resources["./images/rotate.png"].texture
+    );
+    var close = new Sprite(
+      resources["./images/close.png"].texture
+    );
+    var scale = new Sprite(
+      resources["./images/zoom.png"].texture
+    );
+
+    var border = new PIXI.Graphics();  //  绘制虚线轮廓
+    border.lineStyle(0.5, 0xFFFFFF, 0.5);
+    border.drawRect(0, 0, body.width, body.height);
+    border.endFill();
+    border.x = body.x - 10;
+    border.y = body.y - 10;
+    border.width = body.width + 20;
+    border.height = body.height + 20;
+    rotate.width = 32;
+    rotate.height = 24;
+    rotate.x = border.x + border.width;
+    rotate.y = border.y;
+    rotate.defaultstate = true;  //  默认显示旋转按钮
+    close.width = 32;
+    close.height = 24;
+    close.x = border.x - close.width;
+    close.y = border.y + border.height - close.height;
+    scale.width = 32;
+    scale.height = 24;
+    scale.x = border.x + border.width;
+    scale.y = border.y + border.height - scale.height;
+    scale.defaultstate = true;  //  默认显示缩放按钮
+    border.interactive = scale.interactive = close.interactive = rotate.interactive = body.interactive = true;
+    var materialPartContainer = new PIXI.Container();  //  素材部件分组
+    if (option.scale === "false") {
+      scale.defaultstate = false;
+      scale.visible = false;
+    }
+    if (option.rotate === "false") {
+      rotate.defaultstate = false;
+      rotate.visible = false;
+    }
+    materialPartContainer.addChild(body);
+    materialPartContainer.addChild(border);
+    materialPartContainer.addChild(rotate);
+    materialPartContainer.addChild(close);
+    materialPartContainer.addChild(scale);
+    materialPartContainer.position.set(100 + oMaterialMovePosition.x, 100 + oMaterialMovePosition.y);  //    设置位置
+    materialPartContainer.pivot.set(body.width / 2, body.height / 2);
+    materialPartContainer.parentGroup = blueGroup;
+    materialContainer.addChild(materialPartContainer);
+    bindTouchEvent(materialPartContainer);
+    oMaterialMovePosition.x += Math.random() * 10;
+    oMaterialMovePosition.y += Math.random() * 10;
+    // app.ticker.add(function () {
+    // });
+  }
+  function bindTouchEvent(_container) {
+    _container.interactive = true;  //  允许移动
+    _container.children[2].mousedown = _container.children[2].touchstart = function (event) {
+      console.log('-----------------点击旋转按钮-----------------------');
+      console.log(this);
+      this.parent.sOperationPart = "rotate";  //  点击旋转按钮
+      event.data.originalEvent.preventDefault();
+      this.data = event.data;
+      var oClickStagePosition = this.data.getLocalPosition(this.parent.parent);
+      oTouchVector = {
+        x: oClickStagePosition.x - (this.parent.x),
+        y: oClickStagePosition.y - (this.parent.y)
+      };
+      this.dragging = true;
+    }
+    _container.children[2].mousemove = _container.children[2].touchmove = function (event) {
+      if (this.dragging && this.parent.sOperationPart === "rotate") {
+        console.log('-----------------旋转按钮-----------------------');
+        var oClickStagePosition = this.data.getLocalPosition(this.parent.parent);
+        var vector = {
+          x: oClickStagePosition.x - (this.parent.x),
+          y: oClickStagePosition.y - (this.parent.y)
+        };
+        var angle = _getRotateAngle(vector, oTouchVector) / 60;
+        this.parent.rotation += angle;
+        oTouchVector.x = vector.x;
+        oTouchVector.y = vector.y;
+      }
+    }
+    _container.children[2].mouseup = _container.children[2].mouseupoutside = _container.children[2].touchend = function (event) {
+      console.log('-----------------松开旋转按钮-----------------------');
+      var angle = this.parent.rotation / 0.78 * (45) * (2 * Math.PI / 360);
+      var x1 = this.parent.pivot.x * Math.cos(angle) - this.parent.pivot.y * Math.sin(angle);
+      var y1 = this.parent.pivot.y * Math.cos(angle) + this.parent.pivot.x * Math.sin(angle);
+      this.dragging = false;
+      this.parent.sOperationPart = null;
+      this.data = null;
+    }
+    _container.children[3].mousedown = _container.children[3].touchstart = function (event) {
+      // console.log('-----------------点击关闭按钮-----------------------');
+      // console.log(this);
+      this.parent.sOperationPart = "close";
+    }
+    _container.children[3].mouseup = _container.children[3].mouseupoutside = _container.children[3].touchend = function () {
+      if (this.parent.sOperationPart === "close") {
+        console.log('-----------------点击关闭按钮-----------------------');
+        console.log(this);
+        app.stage.children[2].removeChild(this.parent);
+        console.log(app.stage, this.parent)
+      }
+    }
+    _container.children[4].mousedown = _container.children[4].touchstart = function (event) {
+      this.parent.sOperationPart = "zoom";
+      event.data.originalEvent.preventDefault();
+      this.data = event.data;
+      var oClickStagePosition = this.data.getLocalPosition(this.parent.parent);
+      oTouchVector = {
+        x: oClickStagePosition.x - (this.parent.x),
+        y: oClickStagePosition.y - (this.parent.y)
+      };
+      var xLen = Math.abs(oTouchVector.x);
+      var yLen = Math.abs(oTouchVector.y);
+      touchDistance = _getDistance(xLen, yLen);
+      this.dragging = true;
+    }
+    _container.children[4].mousemove = _container.children[4].touchmove = function (event) {
+      if (this.dragging && this.parent.sOperationPart === "zoom") {
+        var oClickStagePosition = this.data.getLocalPosition(this.parent.parent);
+        var vector = {
+          x: oClickStagePosition.x - (this.parent.x),
+          y: oClickStagePosition.y - (this.parent.y)
+        };
+        var xLen = Math.abs(vector.x);
+        var yLen = Math.abs(vector.y);
+        var _touchDistance = _getDistance(xLen,yLen);
+        if (touchDistance) {
+          var pinchScale = _touchDistance / touchDistance;
+          if (Math.abs(pinchScale - previousPinchScale) > 0.003) {
+            if (pinchScale - previousPinchScale > 0 && _container.children[0].height < 300 && _container.children[0].width < 500) {
+              var x = math.eval(4 * (_container.children[0].height / _container.children[0].width))
+              _container.children[0].width += 4;
+              _container.children[0].height += x;
+              _container.children[1].width = _container.children[0].width + 20;
+              _container.children[1].height = _container.children[0].height + 20;
+              _container.children[2].x = _container.children[1].x + _container.children[1].width;
+              _container.children[3].y = _container.children[1].y + _container.children[1].height - _container.children[3].height;
+              _container.children[4].x = _container.children[1].x + _container.children[1].width;
+              _container.children[4].y = _container.children[1].y + _container.children[1].height - _container.children[4].height;
+              _container.pivot.set(_container.children[0].width / 2, _container.children[0].height / 2);
+            } else if (pinchScale - previousPinchScale < 0 && _container.children[0].height > 24 && _container.children[0].width > 24) {
+              var x = math.eval(4 * (_container.children[0].height / _container.children[0].width))
+              _container.children[0].width  -= 4;
+              _container.children[0].height -= x;
+              _container.children[1].width = _container.children[0].width + 20;
+              _container.children[1].height = _container.children[0].height + 20;
+              _container.children[2].x = _container.children[1].x + _container.children[1].width;
+              _container.children[3].y = _container.children[1].y + _container.children[1].height - _container.children[3].height;
+              _container.children[4].x = _container.children[1].x + _container.children[1].width;
+              _container.children[4].y = _container.children[1].y + _container.children[1].height - _container.children[4].height;
+              _container.pivot.set(_container.children[0].width / 2, _container.children[0].height / 2);
+            }
+          }
+          previousPinchScale = pinchScale;
+        }
+      }
+    }
+    _container.children[4].mouseup = _container.children[4].mouseupoutside = _container.children[4].touchend = function (event) {
+        if (this.parent.sOperationPart === "zoom") {
+          this.dragging = false;
+        }
+    }
+    _container.mousedown = _container.touchstart = function(event){
+      console.log('------------------mousedown--------------------');
+      console.log('this => ', this);
+      if (this.sOperationPart === "rotate" || this.sOperationPart === "close" || this.sOperationPart === "zoom" || event.data.originalEvent.changedTouches.length > 1) {
+        return ;
+      }
+      this.sOperationPart = "body";
+      console.log('event => ', event);
+      this.data = event.data;
+      for (var i in app.stage.children[2].children) {
+        app.stage.children[2].children[i].sOperationPart = null;
+        for (var j in app.stage.children[2].children[i].children) {
+          if (Number(j) !== 0) {
+            app.stage.children[2].children[i].children[j].visible = false;
+          }
+        }
+      }
+      this.sOperationPart = "body";
+      if (oDefaultOption.showRule === 'selectOnTop') {
+        app.stage.children[2].addChild(this);  //  重新绘制 在视角上层
+      } else if (oDefaultOption.showRule === 'nearPositionOnTop') {
+
+      }
+      this.oldGroup = this.parentGroup;
+      this.parentGroup = dragGroup;
+      this.dragging = true;
+      this.dragPoint = event.data.getLocalPosition(this.parent);
+      this.dragPoint.x -= this.x;
+      this.dragPoint.y -= this.y;
+
+      if (!this.children[1].visible) {
+        this.children[1].visible = true;
+        this.children[2].visible = this.children[2].defaultstate;
+        this.children[3].visible = true;
+        this.children[4].visible = this.children[4].defaultstate;
+      }
+    }
+    _container.mousemove = _container.touchmove = function(event){
+      if (this.dragging && this.sOperationPart !== "rotate" && this.sOperationPart !== "close") {
+        var newPosition = this.data.getLocalPosition(this.parent);
+        this.x = newPosition.x - this.dragPoint.x;
+        this.y = newPosition.y - this.dragPoint.y;
+      }
+    }
+    _container.mouseup = _container.mouseupoutside = _container.touchend = function(event){
+      console.log('------------------mouseup--------------------');
+      console.log('this => ', this);
+      console.log('event => ', event);
+      this.dragging = false;
+      this.parentGroup = this.oldGroup;
+      this.data = null;
+      this.sOperationPart = null;
+    };
+  }
+  function loadProgressHandler(loader, resource) {
+    // console.log('--------------正在加载图片---------------')
+    // console.log("loading: " + resource.url);
+    // console.log("progress: " + loader.progress + "%");
+  }
+  function _getDistance (xLen, yLen) {
+    return Math.sqrt(xLen * xLen + yLen * yLen);
+  }
+  function _getRotateDirection (vector1, vector2) {
+    return vector1.x * vector2.y - vector2.x * vector1.y;
+  }
+  function loaded () {
+    myScroll = new IScroll('#container', {
+      eventPassthrough: true,
+      scrollX: true,
+      scrollY: false,
+      preventDefault: false
+    });
+    myScroll_m = new IScroll('#container_m', {
+      eventPassthrough: true,
+      scrollX: true,
+      scrollY: false,
+      preventDefault: false
+    });
+  }
+  function _getRotateAngle (vector1, vector2) {
+    var direction = _getRotateDirection(vector1,vector2);
+    direction = direction > 0 ? -1 : 1;
+    var len1 = _getDistance(vector1.x,vector1.y);
+    var len2 = _getDistance(vector2.x,vector2.y);
+    var mr = len1 * len2;
+    if(mr === 0) return 0;
+    var dot = vector1.x * vector2.x + vector1.y * vector2.y;
+    var r = dot / mr;
+    if(r > 1) r = 1;
+    if(r < -1) r = -1;
+    return Math.acos(r) * direction * 180 / Math.PI;
+  }
+  document.getElementById('save').onclick = function () {
+    for (var i in app.stage.children[2].children) {
+      app.stage.children[2].children[i].sOperationPart = null;
+      for (var j in app.stage.children[2].children[i].children) {
+        if (Number(j) !== 0) {
+          app.stage.children[2].children[i].children[j].visible = false;
+        }
+      }
+    }
+    app.renderer.render(app.stage);
+    var imageData = app.view.toDataURL("image/png");
+    console.log(imageData)
+  }
+  document.getElementById('showOrHide').onclick = function () {
+    if (this.innerHTML.indexOf('隐藏') !== -1) {
+      var container_m = document.getElementById("container_m");
+      $("#container_m").hide(1000);
+      this.innerHTML = "显示";
+    } else {
+      var container_m = document.getElementById("container_m");
+      $("#container_m").show(1000);
+      this.innerHTML = "隐藏";
+    }
+  }
+  function findDimensions() {
+    var winWidth = winHeight = 0;
+    if (window.innerWidth) {
+      winWidth = window.innerWidth;
+    } else if ((document.body) && (document.body.clientWidth)) {
+      winWidth = document.body.clientWidth;
+    }
+    //获取窗口高度
+    if (window.innerHeight) {
+      winHeight = window.innerHeight;
+    } else if ((document.body) && (document.body.clientHeight)) {
+      winHeight = document.body.clientHeight;
+    }
+    //通过深入Document内部对body进行检测，获取窗口大小
+    if (document.documentElement && document.documentElement.clientHeight && document.documentElement.clientWidth) {
+      winHeight = document.documentElement.clientHeight;
+      winWidth = document.documentElement.clientWidth;
+    }
+    return {
+      width: winWidth,
+      height: winHeight
+    }
+  }
+</script>
+
+</html>
